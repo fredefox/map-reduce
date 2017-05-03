@@ -17,13 +17,13 @@
 
 map_reduce_seq(Map,Reduce,Input) ->
     Mapped = [{K2,V2}
-	      || {K,V} <- Input,
-		 {K2,V2} <- Map(K,V)],
+          || {K,V} <- Input,
+         {K2,V2} <- Map(K,V)],
     reduce_seq(Reduce,Mapped).
 
 reduce_seq(Reduce,KVs) ->
     [KV || {K,Vs} <- group(lists:sort(KVs)),
-	   KV <- Reduce(K,Vs)].
+       KV <- Reduce(K,Vs)].
 
 group([]) ->
     [];
@@ -39,24 +39,24 @@ map_reduce_par(Map,M,Reduce,R,Input) ->
     Parent = self(),
     Splits = split_into(M,Input),
     Mappers =
-	[spawn_mapper(Parent,Map,R,Split)
-	 || Split <- Splits],
+    [spawn_mapper(Parent,Map,R,Split)
+     || Split <- Splits],
     Mappeds =
-	[receive {Pid,L} -> L end || Pid <- Mappers],
+    [receive {Pid,L} -> L end || Pid <- Mappers],
     Reducers =
-	[spawn_reducer(Parent,Reduce,I,Mappeds)
-	 || I <- lists:seq(0,R-1)],
+    [spawn_reducer(Parent,Reduce,I,Mappeds)
+     || I <- lists:seq(0,R-1)],
     Reduceds =
-	[receive {Pid,L} -> L end || Pid <- Reducers],
+    [receive {Pid,L} -> L end || Pid <- Reducers],
     lists:sort(lists:flatten(Reduceds)).
 
 spawn_mapper(Parent,Map,R,Split) ->
     spawn_link(fun() ->
-			Mapped = [{erlang:phash2(K2,R),{K2,V2}}
-				  || {K,V} <- Split,
-				     {K2,V2} <- Map(K,V)],
-			Parent ! {self(),group(lists:sort(Mapped))}
-		end).
+            Mapped = [{erlang:phash2(K2,R),{K2,V2}}
+                  || {K,V} <- Split,
+                     {K2,V2} <- Map(K,V)],
+            Parent ! {self(),group(lists:sort(Mapped))}
+        end).
 
 split_into(N,L) ->
     split_into(N,L,length(L)).
@@ -69,9 +69,9 @@ split_into(N,L,Len) ->
 
 spawn_reducer(Parent,Reduce,I,Mappeds) ->
     Inputs = [KV
-	      || Mapped <- Mappeds,
-		 {J,KVs} <- Mapped,
-		 I==J,
-		 KV <- KVs],
+          || Mapped <- Mappeds,
+         {J,KVs} <- Mapped,
+         I==J,
+         KV <- KVs],
     spawn_link(fun() -> Parent ! {self(),reduce_seq(Reduce,Inputs)} end).
 
