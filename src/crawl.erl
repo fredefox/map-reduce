@@ -61,7 +61,7 @@ find_urls(Url,Html) ->
 			|| [{Pos,Len}] <- RLocs];
 		   _ ->
 		       []
-	       end,		       
+	       end,
     Absolute ++ [Url++"/"++
 		     lists:dropwhile(
 		       fun(Char)->Char==$/ end,
