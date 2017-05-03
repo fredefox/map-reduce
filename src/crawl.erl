@@ -5,13 +5,16 @@
 -module(crawl).
 -compile(export_all).
 
+dbg(Frmt) -> dbg(Frmt, []).
+dbg(Frmt, X) -> io:format(Frmt, X).
+prnt1(X) -> dbg("~p~n", [X]).
+
 %% Crawl from a URL, following links to depth D.
 %% Before calling this function, the inets service must
 %% be started using inets:start().
 crawl(Url,D) ->
     Pages = follow(D,[{Url,undefined}]),
-    [{U,Body} || {U,Body} <- Pages,
-         Body /= undefined].
+    [{U,Body} || {U,Body} <- Pages, Body /= undefined].
 
 follow(0,KVs) ->
     KVs;
@@ -21,8 +24,8 @@ follow(D,KVs) ->
 
 map(Url,undefined) ->
     Body = fetch_url(Url),
-    [{Url,Body}] ++
-    [{U,undefined} || U <- find_urls(Url,Body)];
+    Urls = find_urls(Url,Body),
+    [{Url,Body}] ++ [{U,undefined} || U <- Urls];
 map(Url,Body) ->
     [{Url,Body}].
 
@@ -55,6 +58,8 @@ find_urls(Url,Html) ->
            end,
     %% Find links to files in the same directory, which need to be
     %% turned into complete URLs.
+    % WARN: Relative links are not handled correctly. href=a from site /a
+    % resolves to a/a, but should refer to the document itself.
     Relative = case re:run(Lower,"href *= *\"(?!http:).*?(?=\")",[global]) of
            {match,RLocs} ->
                [lists:sublist(Html,Pos+1,Len)
@@ -67,4 +72,3 @@ find_urls(Url,Html) ->
                fun(Char)->Char==$/ end,
                tl(lists:dropwhile(fun(Char)->Char/=$" end, R)))
          || R <- Relative].
-
