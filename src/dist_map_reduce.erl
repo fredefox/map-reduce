@@ -21,13 +21,13 @@ spawn_reducers(Reduce,Call,Master,[],Nodes,NR, NM) ->
   spawn_reducers(Reduce, Call, Master, Nodes, Nodes, NR, NM);
 spawn_reducers(_,_,_,_,_, 0, _) -> [];
 spawn_reducers(Reduce,Call,Master,[N|Ns], Nodes, NR, NM) ->
-  [rpc:call(N, erlang, spawn, [fun () -> reducer(Reduce,Call,Master,NM) end]) ||
+  [rpc:call(N, erlang, spawn_link, [fun () -> reducer(Reduce,Call,Master,NM) end]) ||
    spawn_reducers(Reduce,Call,Master,Ns,Nodes,NR-1, NM)].
 
 spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
   Zipd = zip_round_robin(Chunks, IO_Info#io_info.nodes),
   Red = list_to_tuple(Reducers),
-  [rpc:call(N, erlang, spawn, [fun () -> mapper(Map, C, Red, Call) end]) || {C, N} <- Zipd].
+  [rpc:call(N, erlang, spawn_link, [fun () -> mapper(Map, C, Red, Call) end]) || {C, N} <- Zipd].
 %%DS[k] += v
 
 % Reducers :: Array Pid
