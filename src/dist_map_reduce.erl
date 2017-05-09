@@ -1,7 +1,7 @@
 -module(dist_map_reduce).
 -compile(export_all).
 
--record(io_info, {num_reducers = 1, num_mappers = 1, nodes = nodes()}).
+-record(io_info, {num_reducers = 1, num_mappers = 1, nodes = [node(self()) | nodes()]}).
 
 map_reduce(Map, Reduce, Input, IO_Info) ->
   Chunks = map_reduce:split_into(IO_Info#io_info.num_mappers, Input),
@@ -20,15 +20,17 @@ spawn_reducers(Reduce, Call, Master, IO_Info) ->
   [spawn_link(N, F) || {N, _} <- Ns].
 
 spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
-  Zipd = zip_round_robin(Chunks, IO_Info#io_info.nodes),
+  Ns = IO_Info#io_info.nodes,
+  Zipd = zip_round_robin(Chunks, Ns),
   Red = list_to_tuple(Reducers),
   [spawn_link(N, fun () -> mapper(Map, C, Red, Call) end) || {C, N} <- Zipd].
 %%DS[k] += v
 
 % Reducers :: Array Pid
 mapper(F, Xs, Reducers, Call) ->
-  N = length(Reducers),
+  N = tuple_size(Reducers),
   [ R ! {Call, more_stuff, X}
+    % TODO Two problems here; 1) F has arity 2 and 2) it returns a list of pairs, not a pair.
     || X = {K, _} <- lists:map(F, Xs)
     ,  RIndx = erlang:phash2(K, N)
     ,  R <- element(RIndx+1, Reducers)
