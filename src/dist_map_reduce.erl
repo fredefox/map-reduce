@@ -15,14 +15,9 @@ spawn_reducers(Reduce, Call, Master, IO_Info) ->
   Nodes = IO_Info#io_info.nodes,
   NumReducers = IO_Info#io_info.num_reducers,
   NumMappers = IO_Info#io_info.num_mappers,
-  spawn_reducers(Reduce,Call, Master, Nodes, Nodes, NumReducers, NumMappers).
-
-spawn_reducers(Reduce,Call,Master,[],Nodes,NR, NM) ->
-  spawn_reducers(Reduce, Call, Master, Nodes, Nodes, NR, NM);
-spawn_reducers(_,_,_,_,_, 0, _) -> [];
-spawn_reducers(Reduce,Call,Master,[N|Ns], Nodes, NR, NM) ->
-  [rpc:call(N, erlang, spawn_link, [fun () -> reducer(Reduce,Call,Master,NM) end]) ||
-   spawn_reducers(Reduce,Call,Master,Ns,Nodes,NR-1, NM)].
+  Ns = zip_round_robin(Nodes, lists:seq(1, NumReducers)),
+  F  = fun() -> reducer(Reduce, Call, Master, NumMappers) end,
+  [rpc:call(N, erlang, spawn_link, [F]) || {N, _} <- Ns].
 
 spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
   Zipd = zip_round_robin(Chunks, IO_Info#io_info.nodes),
