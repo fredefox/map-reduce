@@ -12,15 +12,17 @@ prnt1(X) -> dbg("~p~n", [X]).
 %% Crawl from a URL, following links to depth D.
 %% Before calling this function, the inets service must
 %% be started using inets:start().
-crawl(Url,D) ->
-    Pages = follow(D,[{Url,undefined}]),
+crawl(Url, D) -> crawlUsing(Url, D, fun map_reduce:map_reduce_par/5).
+
+crawlUsing(Url,D,F) ->
+    Pages = followUsing(D,[{Url,undefined}],F),
     [{U,Body} || {U,Body} <- Pages, Body /= undefined].
 
-follow(0,KVs) ->
+followUsing(0,KVs,_) ->
     KVs;
-follow(D,KVs) ->
-    follow(D-1,
-       map_reduce:map_reduce_par(fun map/2, 20, fun reduce/2, 1, KVs)).
+followUsing(D,KVs,F) ->
+    followUsing(D-1,
+       F(fun map/2, 20, fun reduce/2, 1, KVs), F).
 
 map(Url,undefined) ->
     Body = fetch_url(Url),
