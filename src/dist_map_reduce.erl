@@ -4,7 +4,7 @@
 -record(io_info, {num_reducers = 1, num_mappers = 1, nodes = nodes()}).
 
 map_reduce(Map, Reduce, Input, IO_Info) ->
-  Chunks = par_map:split_into(IO_Info#io_info.num_mappers, Input),
+  Chunks = map_reduce:split_into(IO_Info#io_info.num_mappers, Input),
   Call = make_ref(),
   Master = self(),
   Reducers = spawn_reducers(Reduce, Call, Master, IO_Info),

@@ -27,8 +27,11 @@ page_rank_par(File) ->
     map_reduce:map_reduce_par(fun map/2, 32, fun reduce/2, 32,
                   [{Url,ok} || Url <- Urls]).
 
+-record(io_info, {num_reducers = 1, num_mappers = 1, nodes = nodes()}).
+
 page_rank_dist(File) ->
     dets:open_file(web,[{file,File}]),
     Urls = dets:foldl(fun({K,_},Keys)->[K|Keys] end,[],web),
-    dist_map_reduce:map_reduce(fun map/2, 32, fun reduce/2, 32,
-                              [{Url,ok} || Url <- Urls]).
+    Nfo = #io_info{num_reducers = 32, num_mappers = 32, nodes = nodes()},
+    dist_map_reduce:map_reduce(fun map/2, fun reduce/2,
+                              [{Url,ok} || Url <- Urls], Nfo).
