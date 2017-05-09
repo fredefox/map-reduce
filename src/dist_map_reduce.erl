@@ -9,7 +9,7 @@ map_reduce(Map, Reduce, Input, IO_Info) ->
   Master = self(),
   Reducers = spawn_reducers(Reduce, Call, Master, IO_Info),
   spawn_mappers(Map, Chunks, Call, Reducers, IO_Info),
-  lists:sort(receive_reducer_output(Call, IO_Info#io_info.num_reducers)).
+  lists:sort(lists:flatten(receive_reducer_output(Call, IO_Info#io_info.num_reducers))).
 
 spawn_reducers(Reduce, Call, Master, IO_Info) ->
   Nodes = IO_Info#io_info.nodes,
@@ -47,8 +47,9 @@ receive_reducer_output(Call, NR) ->
 
 reducer(Reduce,Call,Master,NM) ->
   Mapper_Outputs = receive_mapper_output(Call,NM),
-  KLists = group(lists:sort(lists:concat(Mapper_Outputs))),
-  Master ! {Call,[{Key, Reduce(List)} || {Key,List} <- KLists]}.
+  KLists = group(lists:sort(Mapper_Outputs)),
+  Reply = [Kv || {K,Vs} <- KLists, Kv <- Reduce(K, Vs)],
+  Master ! {Call,Reply}.
 
 receive_mapper_output(Call,NM) -> receive_mapper_output(Call,NM, []).
 
