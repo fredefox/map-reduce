@@ -15,9 +15,9 @@ spawn_reducers(Reduce, Call, Master, IO_Info) ->
   Nodes = IO_Info#io_info.nodes,
   NumReducers = IO_Info#io_info.num_reducers,
   NumMappers = IO_Info#io_info.num_mappers,
-  Ns = zip_round_robin(Nodes, lists:seq(1, NumReducers)),
+  Ns = zip_round_robin(lists:seq(1, NumReducers), Nodes),
   F  = fun() -> reducer(Reduce, Call, Master, NumMappers) end,
-  [spawn_link(N, F) || {N, _} <- Ns].
+  [spawn_link(N, F) || {_, N} <- Ns].
 
 spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
   Ns = IO_Info#io_info.nodes,
