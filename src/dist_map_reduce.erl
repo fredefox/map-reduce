@@ -29,11 +29,10 @@ spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
 % Reducers :: Array Pid
 mapper(F, Xs, Reducers, Call) ->
   N = tuple_size(Reducers),
-  [ R ! {Call, more_stuff, X}
+    [ element((erlang:phash2(K2, N))+1, Reducers) ! {Call, more_stuff, Y}
     % TODO Two problems here; 1) F has arity 2 and 2) it returns a list of pairs, not a pair.
-    || X = {K, _} <- lists:map(F, Xs)
-    ,  RIndx = erlang:phash2(K, N)
-    ,  R <- element(RIndx+1, Reducers)
+    || {K, V} <- Xs
+    ,  Y = {K2, _} <- F(K, V)
   ],
   [ R ! {Call, done} || R <- tuple_to_list(Reducers)].
 
