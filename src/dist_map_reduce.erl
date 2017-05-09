@@ -28,13 +28,14 @@ spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
 % Reducers :: Array Pid
 mapper(F, Xs, Reducers, Call) ->
   N = length(Reducers),
-  [ R ! {Call, more_stuff,  X}
+  [ R ! {Call, more_stuff, X}
     || X = {K, _} <- lists:map(F, Xs)
     ,  RIndx = erlang:phash2(K, N)
     ,  R <- element(RIndx+1, Reducers)
   ],
   [ R ! {Call, done} || R <- tuple_to_list(Reducers)].
 
+zip_round_robin(_, []) -> error(badarg);
 zip_round_robin(As, Bs) -> zip_round_robin(As, Bs, Bs).
 zip_round_robin([], _, _) -> [];
 zip_round_robin(As, [], Bs2) -> zip_round_robin(As, Bs2, Bs2);
