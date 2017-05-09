@@ -17,12 +17,12 @@ spawn_reducers(Reduce, Call, Master, IO_Info) ->
   NumMappers = IO_Info#io_info.num_mappers,
   Ns = zip_round_robin(Nodes, lists:seq(1, NumReducers)),
   F  = fun() -> reducer(Reduce, Call, Master, NumMappers) end,
-  [rpc:call(N, erlang, spawn_link, [F]) || {N, _} <- Ns].
+  [spawn_link(N, F) || {N, _} <- Ns].
 
 spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
   Zipd = zip_round_robin(Chunks, IO_Info#io_info.nodes),
   Red = list_to_tuple(Reducers),
-  [rpc:call(N, erlang, spawn_link, [fun () -> mapper(Map, C, Red, Call) end]) || {C, N} <- Zipd].
+  [spawn_link(N, fun () -> mapper(Map, C, Red, Call) end) || {C, N} <- Zipd].
 %%DS[k] += v
 
 % Reducers :: Array Pid
