@@ -7,6 +7,7 @@
 
 %% Use map_reduce to count word occurrences
 
+% This function assumes that the file "web.dat" is in the CWD.
 map(Url,ok) ->
     {ok,web} = dets:open_file(web,[{file,"web.dat"}]),
     [{Url,Body}] = dets:lookup(web,Url),
