@@ -13,3 +13,7 @@ Backlog
   with the correctness of map-reduce.
 
   Cf.: `dist_map_reduce:restart_on_death/2`
+
+  Please also refer to p. 26 of "Robust Erlang"[^1].
+
+[^1]: http://www.cse.chalmers.se/edu/course/DAT280_Parallel_Functional_Programming/Material/RobustErlang/slides.pdf
