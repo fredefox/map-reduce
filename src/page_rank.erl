@@ -9,7 +9,7 @@
 
 % This function assumes that the file "web.dat" is in the CWD.
 map(Url,ok) ->
-    {ok,web} = dets:open_file(web,[{file,"web.dat"}]),
+    dets:open_file(web,[{file,"web.dat"}]),
     [{Url,Body}] = dets:lookup(web,Url),
     Urls = crawl:find_urls(Url,Body),
     [{U,1} || U <- Urls].
