@@ -3,28 +3,64 @@
 
 -record(io_info, {num_reducers = 1, num_mappers = 1, nodes = [node(self()) | nodes()]}).
 
+% The maximum number of workers to spawn simultaneously.
+% No more than the amount of available workers will be
+% spawned at a give time.
+-define(POOL_SIZE, 100).
+
 map_reduce(Map, Reduce, Input, IO_Info) ->
   Chunks = map_reduce:split_into(IO_Info#io_info.num_mappers, Input),
   Call = make_ref(),
   Master = self(),
   Reducers = spawn_reducers(Reduce, Call, Master, IO_Info),
   spawn_mappers(Map, Chunks, Call, Reducers, IO_Info),
-  lists:sort(lists:flatten(receive_reducer_output(Call, IO_Info#io_info.num_reducers))).
+  Res = receive_reducer_output(Call, IO_Info#io_info.num_reducers),
+  lists:sort(lists:flatten(Res)).
 
 spawn_reducers(Reduce, Call, Master, IO_Info) ->
   Nodes = IO_Info#io_info.nodes,
   NumReducers = IO_Info#io_info.num_reducers,
   NumMappers = IO_Info#io_info.num_mappers,
-  Ns = zip_round_robin(lists:seq(1, NumReducers), Nodes),
+%  Ns = zip_round_robin(lists:seq(1, NumReducers), Nodes),
   F  = fun() -> reducer(Reduce, Call, Master, NumMappers) end,
-  [spawn_link(N, F) || {_, N} <- Ns].
+  Funs  = repeat(NumReducers, F),
+  worker_pool(Nodes, ?POOL_SIZE, Funs).
+%  [spawn_link(N, F) || {_, N} <- Ns].
+
+repeat(0, _) -> [];
+repeat(N, X) -> [X | repeat(N-1, X)].
 
 spawn_mappers(Map, Chunks, Call, Reducers, IO_Info) ->
   Ns = IO_Info#io_info.nodes,
-  Zipd = zip_round_robin(Chunks, Ns),
   Red = list_to_tuple(Reducers),
-  [spawn_link(N, fun () -> mapper(Map, C, Red, Call) end) || {C, N} <- Zipd].
-%%DS[k] += v
+  Funs = [fun () -> mapper(Map, C, Red, Call) end || C <- Chunks],
+  worker_pool(Ns, ?POOL_SIZE, Funs).
+
+% Workers are spawned in a round-robin fashion from the worker pool - the first
+% argument to worker_pool/3. An empty pool is an error - we must be able to make
+% progress. When the total number of active workers exceed the size of the pool
+% this call blocks until another worker becomes available.
+
+% TODO With our current implementation the mappers need to synchronously hand
+% off work to the reducers. This is a problem since if the size of the worker
+% pool is smaller than the number of mappers (here functions to execute) then
+% they will block because the reducers are never spawned and hence cannot
+% receive the work that the mappers want to hand off.
+worker_pool([], _, _) -> error(badarg);
+worker_pool(Pool, N, Fs) -> worker_pool(Pool, Pool, N, Fs).
+
+worker_pool(Pool, Xs, 0, Fs) ->
+  receive {done, _} -> worker_pool(Pool, Xs, 1, Fs) end;
+worker_pool(Pool, [], N, Fs) ->
+    worker_pool(Pool, Pool, N + 1, Fs);
+worker_pool(_, _, _, []) -> [];
+worker_pool(Pool, [Nd | Nds], N, [F | Fs]) -> io:format("spawn worker ~p ~p~n", [Nd, N]),
+  [ worker(Nd, F) | worker_pool(Pool, Nds, N - 1, Fs) ].
+
+worker(N, Work) ->
+  Master = self(),
+  F = fun() -> Work(), Master ! {done, N} end,
+  spawn_link(N, F).
 
 % Reducers :: Array Pid
 mapper(F, Xs, Reducers, Call) ->
