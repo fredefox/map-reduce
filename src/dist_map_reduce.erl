@@ -54,7 +54,7 @@ worker_pool(Pool, Xs, 0, Fs) ->
 worker_pool(Pool, [], N, Fs) ->
     worker_pool(Pool, Pool, N + 1, Fs);
 worker_pool(_, _, _, []) -> [];
-worker_pool(Pool, [Nd | Nds], N, [F | Fs]) -> io:format("spawn worker ~p ~p~n", [Nd, N]),
+worker_pool(Pool, [Nd | Nds], N, [F | Fs]) ->
   [ worker(Nd, F) | worker_pool(Pool, Nds, N - 1, Fs) ].
 
 worker(N, Work) ->
