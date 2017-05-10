@@ -60,7 +60,25 @@ worker_pool(Pool, [Nd | Nds], N, [F | Fs]) ->
 worker(N, Work) ->
   Master = self(),
   F = fun() -> Work(), Master ! {done, N} end,
-  spawn_link(N, F).
+  restart_on_death(N, F).
+
+% TODO The pid of the process spawned after death will be lost and therefore
+% tamper with the correctness of map-reduce.
+restart_on_death(N, F) ->
+  Pid = spawn_link(N, F),
+  on_exit(Pid, fun(Reason) -> restart_on_death(Reason, N, F) end),
+  Pid.
+
+restart_on_death(normal, _, _) -> ok;
+restart_on_death(_, N, F) -> restart_on_death(N, F).
+
+on_exit(Pid,Fun) ->
+    spawn(fun() -> process_flag(trap_exit,true),
+                   link(Pid),
+                   receive
+                       {'EXIT',Pid,Why} -> Fun(Why)
+                   end
+          end).
 
 % Reducers :: Array Pid
 mapper(F, Xs, Reducers, Call) ->
