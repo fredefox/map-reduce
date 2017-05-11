@@ -17,5 +17,10 @@ archive:
 		src/main.erl \
 		src/map_reduce.erl \
 		src/page_rank.erl \
+		src/web.dat \
+		BACKLOG.md \
 		Makefile \
 		report.pdf
+
+preview: report
+	xdg-open report.pdf

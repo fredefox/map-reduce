@@ -11,12 +11,6 @@
 dbg(Frmt) -> dbg(Frmt, []).
 dbg(Frmt, X) -> io:format(Frmt, X).
 
-main() ->
-%  inets:start(),
-%  Res = crawl:crawl(?SITE, ?DEPTH),
-%  dbg("~p~n", [Res]),
-%  {ok, F} = dets:open_file(?DATA_FILE, []),
-%  dets:insert(F, Res),
-  % Lkp = dets:lookup(F, ?SITE),
-%  inets:stop(),
-  page_rank:page_rank_dist(?DATA_FILE).
+main() -> benchmark().
+
+benchmark() -> timer:tc(page_rank,page_rank,[?DATA_FILE]).
