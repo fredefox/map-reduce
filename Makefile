@@ -24,3 +24,6 @@ archive:
 
 preview: report
 	xdg-open report.pdf
+
+clean:
+	rm src/*.beam
