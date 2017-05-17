@@ -13,4 +13,6 @@ dbg(Frmt, X) -> io:format(Frmt, X).
 
 main() -> benchmark().
 
-benchmark() -> timer:tc(page_rank,page_rank,[?DATA_FILE]).
+benchmark() ->
+    [timer:tc(page_rank,Atom,[?DATA_FILE]) ||
+	Atom <- [page_rank,page_rank_par,page_rank_dist]].
