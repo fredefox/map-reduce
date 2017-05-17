@@ -38,11 +38,34 @@ search-results.
 Please note that the dets file `web.dat` must already be present on all nodes
 running this program.
 
-Unfortunately we are not submitting test-results stemming from running this on
-multiple machines.
+The test-results that we submit stem from running the program on one dual-core
+machine. The output of the benchmark is:
 
-On one node running `main:main/1` takes 1830187 microseconds. Running it on 40
-nodes (same machine) yields: 1817061 microseconds - so virtually no speed-up.
+    (master@ultrafox)1> main:main().
+    Runtime: [{page_rank,5653846},
+              {page_rank_par,3549150},
+              {page_rank_dist,3262322}]
+    Speedups: [{page_rank,1.0},
+               {page_rank_par,0.6277408334079139},
+               {page_rank_dist,0.577009349034268}]
+    ok
+
+The first output is the absolute run-time and the second output is the runtime
+relative to the first run (the sequential version).
+
+The `web.dat` cotains ~10M of data:
+
+    § du -h src/web.dat
+    9,9M	src/web.dat
+
+When we ran the tests previously we had less data in `web.dat` and we believe
+that increasing the size of this file has enabled us to demonstrate a speed-up.
+The map-reduce algorithm requires that there is a substantial amount of work to
+be done so that it can be split up.
+
+The result of the distributed version is comparable to that of the parallel
+version - which can be attributed to the fact that there is only one physical
+node.
 
 Conclusion
 ----------
