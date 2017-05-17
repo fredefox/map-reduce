@@ -30,6 +30,9 @@ benchmark() ->
 	 || Atom <- [page_rank,page_rank_par,page_rank_dist]],
     % Lens = [ {A, T, length(V)} || {A, {T, V}} <- Res],
     % io:format("~p~n", [Lens]),
+    % Ensure correctness:
+    [ X | Xs ] = [ V || {_, {_, V}} <- Res],
+    [ X = Y || Y <- Xs],
     Res1 = [ {A, T} || {A, {T, _}} <- Res],
     % io:format("foo ~p~nbar ~p~n",[length(V),length(V2)]),
     io:format("Runtime: ~p~n", [Res1]),
