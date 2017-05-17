@@ -14,8 +14,8 @@ dbg(Frmt, X) -> io:format(Frmt, X).
 main() -> benchmark().
 
 benchmark() ->
-    [case timer:tc(page_rank,Atom,[?DATA_FILE]) of
-	 {Time,_} -> Time
-     end
-	 ||
-	Atom <- [page_rank,page_rank_par,page_rank_dist]].
+    [{T1,V},{T2,V},{T3,V2}] = 
+	[timer:tc(page_rank,Atom,[?DATA_FILE])
+	 || Atom <- [page_rank,page_rank_par,page_rank_dist]],
+    io:format("foo ~p~nbar ~p~n",[length(V),length(V2)]),
+    [T1,T2,T3].
