@@ -25,8 +25,14 @@ crawl(S, D) ->
     inets:stop().
 
 benchmark() ->
-    [{T1,V},{T2,V},{T3,V2}] = 
-	[timer:tc(page_rank,Atom,[?DATA_FILE])
+    Res =
+	[{Atom, timer:tc(page_rank,Atom,[?DATA_FILE])}
 	 || Atom <- [page_rank,page_rank_par,page_rank_dist]],
-    io:format("foo ~p~nbar ~p~n",[length(V),length(V2)]),
-    [T1,T2,T3].
+    % Lens = [ {A, T, length(V)} || {A, {T, V}} <- Res],
+    % io:format("~p~n", [Lens]),
+    Res1 = [ {A, T} || {A, {T, _}} <- Res],
+    % io:format("foo ~p~nbar ~p~n",[length(V),length(V2)]),
+    io:format("Runtime: ~p~n", [Res1]),
+    [{_, Idx}|_] = Res1,
+    Res2 = [ {A, T / Idx} || {A, T} <- Res1],
+    io:format("Speedups: ~p~n", [Res2]).
